@@ -7,3 +7,11 @@ CREATE TABLE IF NOT EXISTS medico(
 
 );
 ```
+```SQL
+CREATE TABLE IF NOT EXISTS usuarios (
+	usu_code SERIAL NOT NULL PRIMARY KEY,
+	uso_nome VARCHAR(125),
+	usu_senha VARCHAR(15),
+	usu_tipo VARCHAR (20)
+	);
+	```
