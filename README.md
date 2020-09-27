@@ -35,3 +35,6 @@ CREATE TABLE IF NOT EXISTS pacientes (
 	pac_bairro_fkey INT REFERENCES bairro (baicode)
 	);
 ```
+```sql
+INSERT INTO bairro (bainome) VALUES ('Alto do São Francisco'),('Campo Novo'), ('Campo Velho'), ('Centro'), ('Residencial');
+```
