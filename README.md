@@ -22,3 +22,16 @@ CREATE TABLE IF NOT EXISTS BAIRRO (
 	
 	);
 ```
+```sql
+CREATE TABLE IF NOT EXISTS pacientes (
+	pac_code SERIAL NOT NULL PRIMARY KEY,
+	pac_nome VARCHAR(125),
+	pac_nascimento DATE,
+	PAC_RG VARCHAR (25),
+	PAC_TELEFONE VARCHAR (15),
+	pac_rua VARCHAR (135),
+	pac_cep VARCHAR (20),
+	pac_complemento VARCHAR (50),
+	pac_bairro_fkey INT REFERENCES bairro (baicode)
+	);
+```
