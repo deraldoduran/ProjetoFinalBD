@@ -14,4 +14,11 @@ CREATE TABLE IF NOT EXISTS usuarios (
 	usu_senha VARCHAR(15),
 	usu_tipo VARCHAR (20)
 	);
-	```
+```
+```sql
+CREATE TABLE IF NOT EXISTS BAIRRO (
+	baicode SERIAL NOT NULL PRIMARY KEY,
+	bainome VARCHAR(125)
+	
+	);
+```
