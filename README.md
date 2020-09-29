@@ -1163,3 +1163,1791 @@ public class BeansMedico {
     }
 }
 ```
+```java
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package modeloDAO;
+
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JOptionPane;
+import modeloBeans.BeansMedico;
+import modeloConection.Conexao;
+
+/**
+ *
+ * @author duran
+ */
+public class DAOMedico {
+    Conexao conex = new Conexao();
+    BeansMedico mod = new BeansMedico();
+    
+    
+    
+    public BeansMedico bucaMedico (BeansMedico mod){
+        
+        conex.Conexao();
+        conex.executaSQL("SELECT * FROM medico WHERE nome LIKE '%" + mod.getPesquisa() + "%'");
+        try {
+            conex.rs.first();
+            mod.setCodigo(conex.rs.getInt("num_med"));
+            mod.setNome(conex.rs.getString("nome"));
+            mod.setEspecialidade(conex.rs.getString("especialidade"));
+            mod.setCrm(conex.rs.getInt("crm"));
+            
+        } catch (SQLException ex) {
+            
+             JOptionPane.showMessageDialog(null, "não cadastrado" );
+        }
+        
+        
+        conex.Desconecta();
+        
+        return mod;
+    }
+    
+    public void Editar(BeansMedico mod){
+        conex.Conexao();
+        try{
+        PreparedStatement pst;
+            pst = conex.con.prepareStatement("update medico set nome = ?, especialidade = ?, crm = ? where num_med = ?");
+            pst.setString(1, mod.getNome());
+            pst.setString(2, mod.getEspecialidade());
+            pst.setInt(3, mod.getCrm());
+            pst.setInt(4, mod.getCodigo());
+            pst.execute();
+             JOptionPane.showMessageDialog(null, "update feito com sucesso!");
+                }catch (SQLException ex){
+                    JOptionPane.showMessageDialog(null,"houve algum erro no update" + ex.getMessage());
+                }
+        conex.Desconecta();
+    }
+    
+    public void Excluir (BeansMedico mod){
+        
+        conex.Conexao();
+        PreparedStatement pst;
+        try {
+            pst = conex.con.prepareStatement("delete from medico where num_med = ?");
+            pst.setInt(1, mod.getCodigo());
+            pst.execute();
+            JOptionPane.showMessageDialog(null,"registro apagado com sucesso");
+        } catch (SQLException ex) {
+            Logger.getLogger(DAOMedico.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(null,"houve algum erro no delete" + ex.getMessage());
+        }
+        
+        
+        conex.Desconecta();
+    }
+    
+    
+    public void Salvar(BeansMedico mod){
+    
+        conex.Conexao();
+        
+        try {
+            PreparedStatement pst = conex.con.prepareStatement("insert into medico (nome, especialidade, crm) values(?,?,?)");
+            pst.setString(1, mod.getNome());
+            pst.setString(2, mod.getEspecialidade());
+            pst.setInt(3, mod.getCrm());
+            pst.execute();
+            JOptionPane.showMessageDialog(null, "feito o insert no banco de dados");
+        } catch (SQLException ex) {
+           JOptionPane.showMessageDialog(null, "erro ao inserir no banco de dados" + ex.getMessage());
+        }
+        
+        
+        
+        conex.Desconecta();
+}
+    
+}
+```
+```java
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package modeloBeans;
+
+import java.util.ArrayList;
+import javax.swing.table.AbstractTableModel;
+
+/**
+ *
+ * @author duran
+ */
+public class ModeloTabela extends AbstractTableModel {
+    
+     private ArrayList linhas = null;
+        private String[] colunas = null;
+        
+        
+         public ModeloTabela(ArrayList lin, String[] col){
+       
+       setLinhas(lin);
+       setColunas(col);
+       
+   }
+
+    /**
+     * @return the linhas
+     */
+    public ArrayList getLinhas() {
+        return linhas;
+    }
+
+    /**
+     * @param linhas the linhas to set
+     */
+    public void setLinhas(ArrayList linhas) {
+        this.linhas = linhas;
+    }
+
+    /**
+     * @return the colunas
+     */
+    public String[] getColunas() {
+        return colunas;
+    }
+
+    /**
+     * @param colunas the colunas to set
+     */
+    public void setColunas(String[] colunas) {
+        this.colunas = colunas;
+    }
+        
+    
+     @Override
+    public int getColumnCount(){
+        
+        return colunas.length;
+        
+    }
+    
+     @Override
+    public int getRowCount(){
+        
+        return linhas.size();
+    }
+    
+    public String getColumnNome(int numCol){
+        
+        return colunas[numCol];
+        
+    }
+    
+     @Override
+    public Object getValueAt(int numLin, int numCol){
+        Object[] linha = (Object[])getLinhas().get(numLin);
+        return linha[numCol];
+    }
+
+   
+
+        
+    
+}
+```
+```java
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package visao;
+
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JOptionPane;
+import javax.swing.ListSelectionModel;
+import modeloBeans.BeansUsuario;
+import modeloBeans.ModeloTabela;
+import modeloConection.Conexao;
+import modeloDAO.DAOUsuario;
+
+/**
+ *
+ * @author duran
+ */
+public class FormUsuario extends javax.swing.JFrame {
+
+    /**
+     * Creates new form FormUsuario
+     */
+    BeansUsuario mod = new BeansUsuario();
+    DAOUsuario dao = new DAOUsuario();
+    Conexao conex = new Conexao();
+    int flag = 0;
+    public FormUsuario() {
+        initComponents();
+        preencherTabela("select * from usuarios order by uso_nome");
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">                          
+    private void initComponents() {
+
+        jPanel1 = new javax.swing.JPanel();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
+        jLabel6 = new javax.swing.JLabel();
+        jComboBoxTipo = new javax.swing.JComboBox();
+        jTextFieldUsuario = new javax.swing.JTextField();
+        jPasswordFieldSenha = new javax.swing.JPasswordField();
+        jPasswordFieldConfirmarSenha = new javax.swing.JPasswordField();
+        jButtonNovo = new javax.swing.JButton();
+        jButtonSalvar = new javax.swing.JButton();
+        jButtonCancelar = new javax.swing.JButton();
+        jButtonAlterar = new javax.swing.JButton();
+        jButtonExcluir = new javax.swing.JButton();
+        jButtonPesquisar = new javax.swing.JButton();
+        jTextFieldPesquisa = new javax.swing.JTextField();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jTableUsuario = new javax.swing.JTable();
+        jLabel2 = new javax.swing.JLabel();
+        jTextFieldID = new javax.swing.JTextField();
+        jLabel1 = new javax.swing.JLabel();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
+
+        jPanel1.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+
+        jLabel3.setText("Usuário:");
+
+        jLabel4.setText("Senha:");
+
+        jLabel5.setText("Confirmar Senha:");
+
+        jLabel6.setText("Tipo:");
+
+        jComboBoxTipo.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Administrador", "Médico", "Recepcionista", " " }));
+        jComboBoxTipo.setEnabled(false);
+
+        jTextFieldUsuario.setEnabled(false);
+
+        jPasswordFieldSenha.setEnabled(false);
+
+        jPasswordFieldConfirmarSenha.setEnabled(false);
+
+        jButtonNovo.setText("Novo");
+        jButtonNovo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonNovoActionPerformed(evt);
+            }
+        });
+
+        jButtonSalvar.setText("Salvar");
+        jButtonSalvar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonSalvarActionPerformed(evt);
+            }
+        });
+
+        jButtonCancelar.setText("Cancelar");
+        jButtonCancelar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonCancelarActionPerformed(evt);
+            }
+        });
+
+        jButtonAlterar.setText("Alterar");
+        jButtonAlterar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonAlterarActionPerformed(evt);
+            }
+        });
+
+        jButtonExcluir.setText("Excluir");
+        jButtonExcluir.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonExcluirActionPerformed(evt);
+            }
+        });
+
+        jButtonPesquisar.setText("Pesquisa");
+        jButtonPesquisar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonPesquisarActionPerformed(evt);
+            }
+        });
+
+        jTableUsuario.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {},
+                {},
+                {},
+                {}
+            },
+            new String [] {
+
+            }
+        ));
+        jTableUsuario.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jTableUsuarioMouseClicked(evt);
+            }
+        });
+        jScrollPane1.setViewportView(jTableUsuario);
+
+        jLabel2.setText("ID:");
+
+        jTextFieldID.setEnabled(false);
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(22, 22, 22)
+                        .addComponent(jButtonNovo)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButtonSalvar)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButtonCancelar)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButtonAlterar)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jButtonExcluir))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 461, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addContainerGap(14, Short.MAX_VALUE)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jLabel6)
+                            .addComponent(jLabel4)
+                            .addComponent(jLabel3))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jComboBoxTipo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addComponent(jPasswordFieldSenha, javax.swing.GroupLayout.PREFERRED_SIZE, 127, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                        .addGap(18, 18, 18)
+                                        .addComponent(jLabel5))
+                                    .addComponent(jTextFieldUsuario, javax.swing.GroupLayout.PREFERRED_SIZE, 156, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addComponent(jLabel2)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(jTextFieldID, javax.swing.GroupLayout.PREFERRED_SIZE, 72, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                    .addComponent(jPasswordFieldConfirmarSenha, javax.swing.GroupLayout.PREFERRED_SIZE, 125, javax.swing.GroupLayout.PREFERRED_SIZE)))))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(6, 6, 6)
+                        .addComponent(jButtonPesquisar)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jTextFieldPesquisa, javax.swing.GroupLayout.PREFERRED_SIZE, 162, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(85, 85, 85))
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3)
+                    .addComponent(jTextFieldUsuario, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel2)
+                    .addComponent(jTextFieldID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(18, 18, 18)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel4)
+                    .addComponent(jPasswordFieldSenha, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel5)
+                    .addComponent(jPasswordFieldConfirmarSenha, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel6)
+                    .addComponent(jComboBoxTipo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButtonPesquisar)
+                    .addComponent(jTextFieldPesquisa, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(20, 20, 20)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButtonNovo)
+                    .addComponent(jButtonSalvar)
+                    .addComponent(jButtonCancelar)
+                    .addComponent(jButtonAlterar)
+                    .addComponent(jButtonExcluir))
+                .addGap(18, 18, 18)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 188, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(179, Short.MAX_VALUE))
+        );
+
+        jLabel1.setBackground(new java.awt.Color(153, 153, 255));
+        jLabel1.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
+        jLabel1.setText("Cadastro de Usuários");
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
+            .addGroup(layout.createSequentialGroup()
+                .addGap(163, 163, 163)
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 184, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 21, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addGap(27, 27, 27)
+                .addComponent(jPanel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap())
+        );
+
+        pack();
+        setLocationRelativeTo(null);
+    }// </editor-fold>                        
+
+    private void jButtonNovoActionPerformed(java.awt.event.ActionEvent evt) {                                            
+       flag = 1;
+       jTextFieldUsuario.setEnabled(true);
+       jComboBoxTipo.setEnabled(true);
+       jPasswordFieldSenha.setEnabled(true);
+       jPasswordFieldConfirmarSenha.setEnabled(true);
+       jButtonSalvar.setEnabled(true);
+       jButtonCancelar.setEnabled(true);
+    }                                           
+
+    private void jButtonSalvarActionPerformed(java.awt.event.ActionEvent evt) {                                              
+        if(jTextFieldUsuario.getText().isEmpty()){
+            
+            JOptionPane.showMessageDialog(rootPane, "Preencha o campo Usuário");
+            jTextFieldUsuario.requestFocus();
+         
+       }else if(jPasswordFieldSenha.getText().isEmpty()){
+           
+           JOptionPane.showMessageDialog(rootPane, "Preencha o campo Senha");
+           jPasswordFieldSenha.requestFocus();
+           
+       }else if(jPasswordFieldSenha.getText().equals(jPasswordFieldConfirmarSenha.getText())){
+           
+           if (flag == 1){
+       mod.setUsuNome(jTextFieldUsuario.getText());
+       mod.setUsuSenha(jPasswordFieldSenha.getText());
+       mod.setUsuTipo((String) jComboBoxTipo.getSelectedItem());
+       
+        dao.Salvar(mod);
+        jTextFieldPesquisa.setText("");
+        jTextFieldUsuario.setText("");
+        jPasswordFieldSenha.setText("");
+        jPasswordFieldConfirmarSenha.setText("");
+        
+        jTextFieldUsuario.setEnabled(false);
+       
+        jComboBoxTipo.setEnabled(false);
+        jButtonSalvar.setEnabled(false);
+        jButtonCancelar.setEnabled(!true);
+        jButtonAlterar.setEnabled(false);
+        jButtonExcluir.setEnabled(false);
+        jButtonNovo.setEnabled(!false);
+        preencherTabela("select * from usuarios order by uso_nome");
+        jPasswordFieldSenha.setText("");
+        jPasswordFieldConfirmarSenha.setText("");
+      }else {
+        mod.setUsuCode(Integer.parseInt(jTextFieldID.getText()));
+        mod.setUsuNome(jTextFieldUsuario.getText());
+        mod.setUsuSenha(jPasswordFieldSenha.getText());
+        mod.setUsuTipo((String) jComboBoxTipo.getSelectedItem());
+        
+        dao.Alterar(mod);
+        jTextFieldPesquisa.setText("");
+        jTextFieldUsuario.setText("");
+        
+        jTextFieldID.setText("");
+        jTextFieldUsuario.setEnabled(true);
+        
+        jComboBoxTipo.setEnabled(false);
+        jButtonSalvar.setEnabled(false);
+        jButtonCancelar.setEnabled(!true);
+        jButtonAlterar.setEnabled(false);
+        jButtonExcluir.setEnabled(false);
+        jButtonNovo.setEnabled(true);
+        preencherTabela("select * from usuarios order by uso_nome");
+        jPasswordFieldSenha.setText("");
+        jPasswordFieldConfirmarSenha.setText("");
+        
+        
+    }
+       }else{
+           JOptionPane.showMessageDialog(rootPane, "As senhas têm que ser iguais");
+       }
+    }                                             
+
+    private void jButtonPesquisarActionPerformed(java.awt.event.ActionEvent evt) {                                                 
+        mod.setUsuPesquisar(jTextFieldPesquisa.getText());
+       BeansUsuario model = dao.bucaUsuario(mod);
+       jTextFieldUsuario.setText(model.getUsuNome());
+       jTextFieldID.setText(String.valueOf(model.getUsuCode()));
+       jPasswordFieldSenha.setText(model.getUsuSenha());
+       jPasswordFieldConfirmarSenha.setText(model.getUsuSenha());
+       
+       jComboBoxTipo.setSelectedItem(model.getUsuTipo());
+       //preencherTabela("SELECT * FROM usuarios WHERE uso_nome LIKE '%" + mod.getUsuPesquisar()+ "%'");
+       jComboBoxTipo.setEnabled(!true);
+       jPasswordFieldSenha.setEnabled(!true);
+       jPasswordFieldConfirmarSenha.setEnabled(!true);
+       jTextFieldUsuario.setEnabled(!true);
+       jButtonAlterar.setEnabled(true);
+       jButtonExcluir.setEnabled(true);
+       jButtonCancelar.setEnabled(true);
+       jTextFieldPesquisa.setText("");
+    }                                                
+
+    private void jButtonAlterarActionPerformed(java.awt.event.ActionEvent evt) {                                               
+       flag=2;
+       jComboBoxTipo.setEnabled(true);
+       jPasswordFieldSenha.setEnabled(true);
+       jPasswordFieldConfirmarSenha.setEnabled(true);
+       jTextFieldUsuario.setEnabled(true);
+       jButtonAlterar.setEnabled(!true);
+       jButtonExcluir.setEnabled(!true);
+       jButtonCancelar.setEnabled(true);
+       jButtonSalvar.setEnabled(true);
+       jTextFieldPesquisa.setText("");
+        
+        
+    }                                              
+
+    private void jButtonExcluirActionPerformed(java.awt.event.ActionEvent evt) {                                               
+        int resposta = 0;
+       resposta = JOptionPane.showConfirmDialog(rootPane,"deseja realmente excluir?");
+       if (resposta == JOptionPane.YES_OPTION){
+           mod.setUsuCode(Integer.parseInt(jTextFieldID.getText()));
+           dao.Excluir(mod);
+        jTextFieldPesquisa.setText("");
+        jTextFieldUsuario.setText("");
+        jPasswordFieldSenha.setText("");
+        jPasswordFieldConfirmarSenha.setText("");
+        jTextFieldID.setText("");
+        jTextFieldUsuario.setEnabled(true);
+        
+        jComboBoxTipo.setEnabled(false);
+        jButtonSalvar.setEnabled(false);
+        jButtonCancelar.setEnabled(!true);
+        jButtonNovo.setEnabled(true);
+        
+       }
+        
+        
+    }                                              
+
+    private void jTableUsuarioMouseClicked(java.awt.event.MouseEvent evt) {                                           
+        String nome_usuario = "" + jTableUsuario.getValueAt(jTableUsuario.getSelectedRow(), 1);
+        conex.Conexao();
+        conex.executaSQL("select * from usuarios where uso_nome ='" + nome_usuario + "'");
+        
+        try {
+            conex.rs.first();
+            jTextFieldID.setText(String.valueOf(conex.rs.getInt("usu_code")));
+            jTextFieldUsuario.setText(conex.rs.getString("uso_nome"));
+            jComboBoxTipo.setSelectedItem(conex.rs.getString("usu_tipo"));
+            jPasswordFieldSenha.setText(conex.rs.getString("usu_senha"));
+             jPasswordFieldConfirmarSenha.setText(conex.rs.getString("usu_senha"));
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(FormMedico.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(rootPane, "algo errado no mouseClick" + ex);
+        }
+        
+        conex.Desconecta();
+        jButtonAlterar.setEnabled(true);
+        jButtonExcluir.setEnabled(true);
+    }                                          
+
+    private void jButtonCancelarActionPerformed(java.awt.event.ActionEvent evt) {                                                
+        // TODO add your handling code here:
+    }                                               
+         public void preencherTabela(String sql){
+        ArrayList dados = new ArrayList();
+        String [] colunas = new String []{"Id","Nome", "Tipo", "Senha"};
+        //String [] colunas = new String[20]("ID", "Nome");
+       conex.Conexao();
+        conex.executaSQL(sql);
+        try{
+        conex.rs.first();
+        do{
+            dados.add(new Object [] {conex.rs.getInt("usu_code"), conex.rs.getString("uso_nome"), conex.rs.getString("usu_tipo"), conex.rs.getInt("usu_senha")});
+        }while(conex.rs.next());
+        }catch(SQLException ex){
+            JOptionPane.showMessageDialog(rootPane,"Usuario não cadastrado, tente outro nome");
+        }
+        ModeloTabela modelo = new ModeloTabela(dados, colunas);
+        jTableUsuario.setModel(modelo);
+        jTableUsuario.getColumnModel().getColumn(0).setPreferredWidth(40);
+        jTableUsuario.getColumnModel().getColumn(0).setResizable(false);
+        jTableUsuario.getColumnModel().getColumn(1).setPreferredWidth(180);
+        jTableUsuario.getColumnModel().getColumn(1).setResizable(false);
+        jTableUsuario.getColumnModel().getColumn(2).setPreferredWidth(100);
+        jTableUsuario.getColumnModel().getColumn(2).setResizable(false);
+        jTableUsuario.getColumnModel().getColumn(3).setPreferredWidth(80);
+        jTableUsuario.getColumnModel().getColumn(3).setResizable(false);
+        jTableUsuario.getTableHeader().setReorderingAllowed(false);
+        jTableUsuario.setAutoResizeMode(jTableUsuario.AUTO_RESIZE_OFF);
+        jTableUsuario.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        conex.Desconecta();
+    }
+    /**
+     * @param args the command line arguments
+     */
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(FormUsuario.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(FormUsuario.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(FormUsuario.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(FormUsuario.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new FormUsuario().setVisible(true);
+            }
+        });
+    }
+
+    // Variables declaration - do not modify                     
+    private javax.swing.JButton jButtonAlterar;
+    private javax.swing.JButton jButtonCancelar;
+    private javax.swing.JButton jButtonExcluir;
+    private javax.swing.JButton jButtonNovo;
+    private javax.swing.JButton jButtonPesquisar;
+    private javax.swing.JButton jButtonSalvar;
+    private javax.swing.JComboBox jComboBoxTipo;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPasswordField jPasswordFieldConfirmarSenha;
+    private javax.swing.JPasswordField jPasswordFieldSenha;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JTable jTableUsuario;
+    private javax.swing.JTextField jTextFieldID;
+    private javax.swing.JTextField jTextFieldPesquisa;
+    private javax.swing.JTextField jTextFieldUsuario;
+    // End of variables declaration                   
+}
+```
+```java
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package visao;
+
+import java.sql.Date;
+//import java.util.Date;
+import java.sql.SQLException;
+import java.text.DateFormat;
+import java.util.ArrayList;
+import java.util.Locale;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JOptionPane;
+import javax.swing.ListSelectionModel;
+import modeloBeans.BeansPaciente;
+import modeloBeans.ModeloTabela;
+import modeloConection.Conexao;
+import modeloDAO.DAOPaciente;
+
+/**
+ *
+ * @author duran
+ */
+public class FormPaciente extends javax.swing.JFrame {
+
+    Conexao conex = new Conexao();
+    BeansPaciente pac = new BeansPaciente();
+    DAOPaciente dao = new DAOPaciente();
+    int flag =0;
+    int resposta = 0;
+    public FormPaciente() {
+        initComponents();
+        //flag=0;
+        PreencherBairro();
+        preencherTabela("select  pac_code, pac_nome, pac_telefone, pac_rg, bainome from pacientes inner join bairro on pac_bairro_fkey = baicode order by pac_nome");
+    }
+
+    /**
+     * This method is called from within the constructor to initialize the form.
+     * WARNING: Do NOT modify this code. The content of this method is always
+     * regenerated by the Form Editor.
+     */
+    @SuppressWarnings("unchecked")
+    // <editor-fold defaultstate="collapsed" desc="Generated Code">                          
+    private void initComponents() {
+
+        jPanel1 = new javax.swing.JPanel();
+        jLabel2 = new javax.swing.JLabel();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
+        jTextFieldNome = new javax.swing.JTextField();
+        jFormattedTextFieldNascimento = new javax.swing.JFormattedTextField();
+        jFormattedTextFieldRG = new javax.swing.JFormattedTextField();
+        jFormattedTextFieldTelefone = new javax.swing.JFormattedTextField();
+        jPanelEndereço = new javax.swing.JPanel();
+        jLabel7 = new javax.swing.JLabel();
+        jLabel8 = new javax.swing.JLabel();
+        jLabel9 = new javax.swing.JLabel();
+        jLabel10 = new javax.swing.JLabel();
+        jTextFieldRua = new javax.swing.JTextField();
+        jFormattedTextFieldCEP = new javax.swing.JFormattedTextField();
+        jTextFieldComplemento = new javax.swing.JTextField();
+        jComboBoxBairro = new javax.swing.JComboBox();
+        jLabel6 = new javax.swing.JLabel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        jTablePacientes = new javax.swing.JTable();
+        jButtonNovo = new javax.swing.JButton();
+        jButtonSalvar = new javax.swing.JButton();
+        jButtonAlterar = new javax.swing.JButton();
+        jButtonCancelar = new javax.swing.JButton();
+        jButtonExcluir = new javax.swing.JButton();
+        jButtonPesquisa = new javax.swing.JButton();
+        jTextFieldPesquisa = new javax.swing.JTextField();
+        jLabel11 = new javax.swing.JLabel();
+        jTextFieldID = new javax.swing.JTextField();
+        jLabel1 = new javax.swing.JLabel();
+
+        setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+
+        jPanel1.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+
+        jLabel2.setText("Nome:");
+
+        jLabel3.setText("Data Nascimento:");
+
+        jLabel4.setText("RG:");
+
+        jLabel5.setText("Telefone:");
+
+        jTextFieldNome.setEnabled(false);
+
+        jFormattedTextFieldNascimento.setEnabled(false);
+
+        try {
+            jFormattedTextFieldRG.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.MaskFormatter("#######-#")));
+        } catch (java.text.ParseException ex) {
+            ex.printStackTrace();
+        }
+        jFormattedTextFieldRG.setEnabled(false);
+
+        jFormattedTextFieldTelefone.setEnabled(false);
+
+        jPanelEndereço.setBorder(javax.swing.BorderFactory.createEtchedBorder());
+
+        jLabel7.setText("Rua:");
+
+        jLabel8.setText("CEP:");
+
+        jLabel9.setText("Complemento:");
+
+        jLabel10.setText("Bairro:");
+
+        jTextFieldRua.setEnabled(false);
+
+        try {
+            jFormattedTextFieldCEP.setFormatterFactory(new javax.swing.text.DefaultFormatterFactory(new javax.swing.text.MaskFormatter("#####-###")));
+        } catch (java.text.ParseException ex) {
+            ex.printStackTrace();
+        }
+        jFormattedTextFieldCEP.setEnabled(false);
+
+        jTextFieldComplemento.setEnabled(false);
+
+        jComboBoxBairro.setModel(new javax.swing.DefaultComboBoxModel(new String[] { "Item 1", "Item 2", "Item 3", "Item 4" }));
+        jComboBoxBairro.setEnabled(false);
+
+        javax.swing.GroupLayout jPanelEndereçoLayout = new javax.swing.GroupLayout(jPanelEndereço);
+        jPanelEndereço.setLayout(jPanelEndereçoLayout);
+        jPanelEndereçoLayout.setHorizontalGroup(
+            jPanelEndereçoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanelEndereçoLayout.createSequentialGroup()
+                .addGap(31, 31, 31)
+                .addGroup(jPanelEndereçoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanelEndereçoLayout.createSequentialGroup()
+                        .addComponent(jLabel9)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jTextFieldComplemento))
+                    .addGroup(jPanelEndereçoLayout.createSequentialGroup()
+                        .addComponent(jLabel7)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jTextFieldRua)))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(jPanelEndereçoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(jLabel8, javax.swing.GroupLayout.Alignment.TRAILING)
+                    .addComponent(jLabel10, javax.swing.GroupLayout.Alignment.TRAILING))
+                .addGroup(jPanelEndereçoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanelEndereçoLayout.createSequentialGroup()
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addComponent(jFormattedTextFieldCEP, javax.swing.GroupLayout.PREFERRED_SIZE, 92, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(jPanelEndereçoLayout.createSequentialGroup()
+                        .addGap(14, 14, 14)
+                        .addComponent(jComboBoxBairro, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addContainerGap())
+        );
+        jPanelEndereçoLayout.setVerticalGroup(
+            jPanelEndereçoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanelEndereçoLayout.createSequentialGroup()
+                .addContainerGap()
+                .addGroup(jPanelEndereçoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel7)
+                    .addComponent(jLabel8)
+                    .addComponent(jTextFieldRua, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jFormattedTextFieldCEP, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(26, 26, 26)
+                .addGroup(jPanelEndereçoLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel9)
+                    .addComponent(jLabel10)
+                    .addComponent(jTextFieldComplemento, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jComboBoxBairro, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
+        jLabel6.setText("Endereço:");
+
+        jTablePacientes.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {},
+                {},
+                {},
+                {}
+            },
+            new String [] {
+
+            }
+        ));
+        jTablePacientes.addMouseListener(new java.awt.event.MouseAdapter() {
+            public void mouseClicked(java.awt.event.MouseEvent evt) {
+                jTablePacientesMouseClicked(evt);
+            }
+        });
+        jScrollPane1.setViewportView(jTablePacientes);
+
+        jButtonNovo.setText("Novo");
+        jButtonNovo.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonNovoActionPerformed(evt);
+            }
+        });
+
+        jButtonSalvar.setText("Salvar");
+        jButtonSalvar.setEnabled(false);
+        jButtonSalvar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonSalvarActionPerformed(evt);
+            }
+        });
+
+        jButtonAlterar.setText("Alterar");
+        jButtonAlterar.setEnabled(false);
+        jButtonAlterar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonAlterarActionPerformed(evt);
+            }
+        });
+
+        jButtonCancelar.setText("Cancelar");
+        jButtonCancelar.setEnabled(false);
+        jButtonCancelar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonCancelarActionPerformed(evt);
+            }
+        });
+
+        jButtonExcluir.setText("Excluir");
+        jButtonExcluir.setEnabled(false);
+        jButtonExcluir.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonExcluirActionPerformed(evt);
+            }
+        });
+
+        jButtonPesquisa.setText("Pesquisar");
+        jButtonPesquisa.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                jButtonPesquisaActionPerformed(evt);
+            }
+        });
+
+        jLabel11.setText("ID:");
+
+        jTextFieldID.setEnabled(false);
+
+        javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
+        jPanel1.setLayout(jPanel1Layout);
+        jPanel1Layout.setHorizontalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(40, 40, 40)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(jLabel4)
+                            .addComponent(jLabel2))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                            .addComponent(jTextFieldNome, javax.swing.GroupLayout.DEFAULT_SIZE, 129, Short.MAX_VALUE)
+                            .addComponent(jFormattedTextFieldRG))
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(jLabel3)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jFormattedTextFieldNascimento))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addComponent(jLabel5)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jFormattedTextFieldTelefone, javax.swing.GroupLayout.PREFERRED_SIZE, 137, javax.swing.GroupLayout.PREFERRED_SIZE)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jLabel11)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                .addComponent(jTextFieldID)))
+                        .addContainerGap())
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGap(13, 13, 13)
+                        .addComponent(jLabel6)
+                        .addGap(0, 0, Short.MAX_VALUE))))
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addContainerGap()
+                        .addComponent(jPanelEndereço, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                    .addGroup(jPanel1Layout.createSequentialGroup()
+                        .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(40, 40, 40)
+                                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addGroup(jPanel1Layout.createSequentialGroup()
+                                        .addComponent(jButtonNovo)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(jButtonSalvar)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(jButtonAlterar)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(jButtonCancelar)
+                                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                                        .addComponent(jButtonExcluir))
+                                    .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                            .addGroup(jPanel1Layout.createSequentialGroup()
+                                .addGap(70, 70, 70)
+                                .addComponent(jButtonPesquisa)
+                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                                .addComponent(jTextFieldPesquisa, javax.swing.GroupLayout.PREFERRED_SIZE, 280, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                        .addGap(0, 31, Short.MAX_VALUE)))
+                .addContainerGap())
+        );
+        jPanel1Layout.setVerticalGroup(
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(jPanel1Layout.createSequentialGroup()
+                .addGap(18, 18, 18)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel2)
+                    .addComponent(jLabel3)
+                    .addComponent(jTextFieldNome, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jFormattedTextFieldNascimento, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(28, 28, 28)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel4)
+                    .addComponent(jLabel5)
+                    .addComponent(jFormattedTextFieldRG, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jFormattedTextFieldTelefone, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel11)
+                    .addComponent(jTextFieldID, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addComponent(jLabel6)
+                .addGap(3, 3, 3)
+                .addComponent(jPanelEndereço, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 248, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButtonPesquisa)
+                    .addComponent(jTextFieldPesquisa, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(10, 10, 10)
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jButtonNovo)
+                    .addComponent(jButtonSalvar)
+                    .addComponent(jButtonAlterar)
+                    .addComponent(jButtonCancelar)
+                    .addComponent(jButtonExcluir))
+                .addContainerGap(123, Short.MAX_VALUE))
+        );
+
+        jLabel1.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
+        jLabel1.setText("Formulario de Pacientes");
+
+        javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
+        getContentPane().setLayout(layout);
+        layout.setHorizontalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(jLabel1)
+                .addGap(137, 137, 137))
+            .addGroup(layout.createSequentialGroup()
+                .addGap(24, 24, 24)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+        layout.setVerticalGroup(
+            layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(layout.createSequentialGroup()
+                .addComponent(jLabel1)
+                .addGap(17, 17, 17)
+                .addComponent(jPanel1, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+        );
+
+        pack();
+    }// </editor-fold>                        
+
+    private void jButtonSalvarActionPerformed(java.awt.event.ActionEvent evt) {                                              
+        
+        if(jTextFieldNome.getText().isEmpty()){
+            
+            JOptionPane.showMessageDialog(rootPane, "Preencha o campo Nome");
+            jTextFieldNome.requestFocus();
+         
+       }else if(jFormattedTextFieldRG.getText().equals("       - ")){
+           
+           JOptionPane.showMessageDialog(rootPane, "Preencha o campo RG");
+           jFormattedTextFieldRG.requestFocus();
+           
+       }else if(jFormattedTextFieldTelefone.getText().isEmpty()){
+           
+           JOptionPane.showMessageDialog(rootPane, "Preencha o campo Telefone");
+           jFormattedTextFieldTelefone.requestFocus();
+           
+       }else if(jFormattedTextFieldCEP.getText().equals("     -   ")){
+           
+           JOptionPane.showMessageDialog(rootPane, "Preencha o campo CEP");
+           jFormattedTextFieldCEP.requestFocus();
+           
+       }else if(jTextFieldRua.getText().isEmpty()){
+           
+           JOptionPane.showMessageDialog(rootPane, "Preencha o campo Rua");
+           jFormattedTextFieldRG.requestFocus();
+           
+       }else{
+        
+        if (flag == 1){
+        
+       pac.setNome(jTextFieldNome.getText());
+       pac.setNascimento( jFormattedTextFieldNascimento.getText());
+       pac.setRg(jFormattedTextFieldRG.getText());
+       pac.setTelefone(jFormattedTextFieldTelefone.getText());
+       pac.setCep(jFormattedTextFieldCEP.getText());
+       pac.setRua(jTextFieldRua.getText());
+       pac.setComplemento(jTextFieldComplemento.getText());
+       pac.setNomebairro((String)jComboBoxBairro.getSelectedItem());
+       dao.Salvar(pac);
+       preencherTabela("select  pac_code, pac_nome, pac_telefone, pac_rg, bainome from pacientes inner join bairro on pac_bairro_fkey = baicode order by pac_nome");
+       
+        }else{
+       pac.setNome(jTextFieldNome.getText());
+       pac.setNascimento( jFormattedTextFieldNascimento.getText());
+       pac.setRg(jFormattedTextFieldRG.getText());
+       pac.setTelefone(jFormattedTextFieldTelefone.getText());
+       pac.setCep(jFormattedTextFieldCEP.getText());
+       pac.setRua(jTextFieldRua.getText());
+       pac.setComplemento(jTextFieldComplemento.getText());
+       pac.setNomebairro((String)jComboBoxBairro.getSelectedItem());
+       pac.setCodePac(Integer.parseInt(jTextFieldID.getText()));
+       dao.Alterar(pac);
+       preencherTabela("select  pac_code, pac_nome, pac_telefone, pac_rg, bainome from pacientes inner join bairro on pac_bairro_fkey = baicode order by pac_nome");
+            
+        }
+       }
+        jTextFieldComplemento.setText("");
+        jTextFieldNome.setText("");
+        jTextFieldPesquisa.setText("");
+        jTextFieldRua.setText("");
+        jFormattedTextFieldCEP.setText("");
+        jFormattedTextFieldNascimento.setText("");
+        jFormattedTextFieldRG.setText("");
+        jFormattedTextFieldTelefone.setText("");
+        jComboBoxBairro.setSelectedItem(null);
+        jTextFieldComplemento.setEnabled(!true);
+        jTextFieldNome.setEnabled(!true);
+        jTextFieldPesquisa.setEnabled(true);
+        jTextFieldRua.setEnabled(!true);
+        jFormattedTextFieldCEP.setEnabled(!true);
+        jFormattedTextFieldNascimento.setEnabled(!true);
+        jFormattedTextFieldRG.setEnabled(!true);
+        jFormattedTextFieldTelefone.setEnabled(!true);
+        jComboBoxBairro.setEnabled(!true);
+        jButtonPesquisa.setEnabled(true);
+        jButtonAlterar.setEnabled(!true);
+        jButtonSalvar.setEnabled(!true);
+        jButtonCancelar.setEnabled(true);
+        jButtonNovo.setEnabled(true);
+    }                                             
+
+    private void jButtonNovoActionPerformed(java.awt.event.ActionEvent evt) {                                            
+        flag = 1;
+        jButtonSalvar.setEnabled(true);
+        jButtonAlterar.setEnabled(!true);
+        jTextFieldComplemento.setEnabled(true);
+        jTextFieldNome.setEnabled(true);
+        jTextFieldPesquisa.setEnabled(true);
+        jTextFieldRua.setEnabled(true);
+        jFormattedTextFieldCEP.setEnabled(true);
+        jFormattedTextFieldNascimento.setEnabled(true);
+        jFormattedTextFieldRG.setEnabled(true);
+        jFormattedTextFieldTelefone.setEnabled(true);
+        jComboBoxBairro.setEnabled(true);
+        jButtonSalvar.setEnabled(true);
+        jButtonCancelar.setEnabled(true);
+        jButtonNovo.setEnabled(!true);
+        preencherTabela("select  pac_code, pac_nome, pac_telefone, pac_rg, bainome from pacientes inner join bairro on pac_bairro_fkey = baicode order by pac_nome");
+        
+        
+        
+        
+    }                                           
+
+    private void jButtonAlterarActionPerformed(java.awt.event.ActionEvent evt) {                                               
+        flag = 2;
+        jButtonSalvar.setEnabled(true);
+        jButtonNovo.setEnabled(!true);
+        
+        jButtonCancelar.setEnabled(!true);
+        jTextFieldComplemento.setEnabled(true);
+        jTextFieldNome.setEnabled(true);
+        jTextFieldPesquisa.setEnabled(true);
+        jTextFieldRua.setEnabled(true);
+        jFormattedTextFieldCEP.setEnabled(true);
+        jFormattedTextFieldNascimento.setEnabled(true);
+        jFormattedTextFieldRG.setEnabled(true);
+        jFormattedTextFieldTelefone.setEnabled(true);
+        jComboBoxBairro.setEnabled(true);
+        preencherTabela("select  pac_code, pac_nome, pac_telefone, pac_rg, bainome from pacientes inner join bairro on pac_bairro_fkey = baicode order by pac_nome");
+        
+        
+    }                                              
+
+    private void jButtonPesquisaActionPerformed(java.awt.event.ActionEvent evt) {                                                
+       pac.setPesquisar(jTextFieldPesquisa.getText());
+       //JOptionPane.showMessageDialog(rootPane, pac.getClass());
+       BeansPaciente pac1 = dao.buscaPaciente(pac);
+       jTextFieldNome.setText(pac1.getNome());
+       jTextFieldID.setText(String.valueOf(pac1.getCodePac()));
+       jFormattedTextFieldRG.setText(pac1.getRg());
+       jFormattedTextFieldNascimento.setText(pac1.getNascimento());
+       jFormattedTextFieldTelefone.setText(pac1.getTelefone());
+       jTextFieldRua.setText(pac1.getRua());
+       jFormattedTextFieldCEP.setText(pac1.getCep());
+       jTextFieldComplemento.setText(pac1.getComplemento());
+       jComboBoxBairro.setSelectedItem(pac1.getNomebairro());
+       
+        jTextFieldComplemento.setEnabled(!true);
+        jTextFieldNome.setEnabled(!true);
+        jTextFieldPesquisa.setEnabled(!true);
+        jTextFieldRua.setEnabled(!true);
+        jFormattedTextFieldCEP.setEnabled(!true);
+        jFormattedTextFieldNascimento.setEnabled(!true);
+        jFormattedTextFieldRG.setEnabled(!true);
+        jFormattedTextFieldTelefone.setEnabled(!true);
+        jComboBoxBairro.setEnabled(!true);
+        jButtonAlterar.setEnabled(true);
+        jButtonSalvar.setEnabled(!true);
+        jButtonCancelar.setEnabled(true);
+        jButtonNovo.setEnabled(!true);
+        jButtonPesquisa.setEnabled(false);
+       
+       
+       
+    }                                               
+
+    private void jButtonExcluirActionPerformed(java.awt.event.ActionEvent evt) {                                               
+        resposta = JOptionPane.showConfirmDialog(rootPane, "deseja realmente excluir?");
+        if (resposta == JOptionPane.YES_OPTION){
+        
+        pac.setCodePac(Integer.parseInt(jTextFieldID.getText()));
+        dao.excluir(pac);
+        jTextFieldComplemento.setText("");
+        jTextFieldNome.setText("");
+        jTextFieldPesquisa.setText("");
+        jTextFieldRua.setText("");
+        jFormattedTextFieldCEP.setText("");
+        jFormattedTextFieldNascimento.setText("");
+        jFormattedTextFieldRG.setText("");
+        jFormattedTextFieldTelefone.setText("");
+        jComboBoxBairro.setSelectedItem(null);
+        }
+        preencherTabela("select  pac_code, pac_nome, pac_telefone, pac_rg, bainome from pacientes inner join bairro on pac_bairro_fkey = baicode order by pac_nome");
+    }                                              
+
+    private void jTablePacientesMouseClicked(java.awt.event.MouseEvent evt) {                                             
+        
+        String nome_paciente = "" + jTablePacientes.getValueAt(jTablePacientes.getSelectedRow(), 1);
+        conex.Conexao();
+        conex.executaSQL("select * from pacientes where pac_nome ='" + nome_paciente + "'");
+        
+        try {
+            conex.rs.first();
+            jTextFieldID.setText(String.valueOf(conex.rs.getInt("pac_code")));
+            jTextFieldNome.setText(conex.rs.getString("pac_nome"));
+            jFormattedTextFieldCEP.setText(conex.rs.getString("pac_cep"));
+            jTextFieldRua.setText(conex.rs.getString("pac_rua"));
+            jTextFieldComplemento.setText(conex.rs.getString("pac_complemento"));
+            
+            jFormattedTextFieldRG.setText(conex.rs.getString("pac_rg"));
+            jFormattedTextFieldNascimento.setText(conex.rs.getString("pac_nascimento"));
+            jFormattedTextFieldTelefone.setText(conex.rs.getString("pac_telefone"));
+            Conexao conexpesquisa = new Conexao();
+            conexpesquisa.Conexao();
+            conexpesquisa.executaSQL("SELECT * FROM bairro WHERE baicode = "+ conex.rs.getInt("pac_bairro_fkey"));
+            conexpesquisa.rs.first();
+            jComboBoxBairro.setSelectedItem(conex.rs.getString("bainome"));
+            conexpesquisa.Desconecta();
+        } catch (SQLException ex) {
+            Logger.getLogger(FormMedico.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(rootPane, "algo errado no mouseClick" + ex);
+        }
+        
+        conex.Desconecta();
+        jButtonAlterar.setEnabled(true);
+        jButtonExcluir.setEnabled(true);
+                                             
+        
+    }                                            
+
+    private void jButtonCancelarActionPerformed(java.awt.event.ActionEvent evt) {                                                
+        jButtonSalvar.setEnabled(!true);
+        jButtonCancelar.setEnabled(!true);
+        jButtonNovo.setEnabled(true);
+        jTextFieldComplemento.setText("");
+        jTextFieldNome.setText("");
+        jTextFieldPesquisa.setText("");
+        jTextFieldRua.setText("");
+        jTextFieldID.setText("");
+        jFormattedTextFieldCEP.setText("");
+        jFormattedTextFieldNascimento.setText("");
+        jFormattedTextFieldRG.setText("");
+        jFormattedTextFieldTelefone.setText("");
+        jComboBoxBairro.setSelectedItem("");
+    }                                               
+    public void PreencherBairro(){
+        conex.Conexao();
+        
+        conex.executaSQL("SELECT * FROM bairro ORDER BY bainome");
+        
+        try {
+            conex.rs.first();
+            jComboBoxBairro.removeAllItems();
+            do{
+                jComboBoxBairro.addItem(conex.rs.getString("bainome"));
+            }while(conex.rs.next());
+        } catch (SQLException ex) {
+            Logger.getLogger(FormPaciente.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(rootPane,"erro ao preencher bairros" + ex.getMessage());
+        }
+        
+        conex.Desconecta();
+    }
+      public void preencherTabela(String sql){
+        ArrayList dados = new ArrayList();
+        String [] colunas = new String []{"Id","Nome", "Telefone", "RG", "Bairro"};
+        //String [] colunas = new String[20]("ID", "Nome");
+        conex.Conexao();
+        conex.executaSQL(sql);
+        try{
+        conex.rs.first();
+        do{
+            dados.add(new Object [] {conex.rs.getInt("pac_code"), conex.rs.getString("pac_nome"), conex.rs.getString("pac_telefone"), conex.rs.getString("pac_rg"), conex.rs.getString("bainome")});
+        }while(conex.rs.next());
+        }catch(SQLException ex){
+            JOptionPane.showMessageDialog(rootPane,"Médico não cadastrado, tente outro nome");
+        }
+        ModeloTabela modelo = new ModeloTabela(dados, colunas);
+        jTablePacientes.setModel(modelo);
+        jTablePacientes.getColumnModel().getColumn(0).setPreferredWidth(40);
+        jTablePacientes.getColumnModel().getColumn(0).setResizable(false);
+        jTablePacientes.getColumnModel().getColumn(1).setPreferredWidth(180);
+        jTablePacientes.getColumnModel().getColumn(1).setResizable(false);
+        jTablePacientes.getColumnModel().getColumn(2).setPreferredWidth(100);
+        jTablePacientes.getColumnModel().getColumn(2).setResizable(false);
+        jTablePacientes.getColumnModel().getColumn(3).setPreferredWidth(80);
+        jTablePacientes.getColumnModel().getColumn(3).setResizable(false);
+        jTablePacientes.getColumnModel().getColumn(4).setPreferredWidth(80);
+        jTablePacientes.getColumnModel().getColumn(4).setResizable(false);
+        jTablePacientes.getTableHeader().setReorderingAllowed(false);
+        jTablePacientes.setAutoResizeMode(jTablePacientes.AUTO_RESIZE_OFF);
+        jTablePacientes.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        conex.Desconecta();
+    }
+    public static void main(String args[]) {
+        /* Set the Nimbus look and feel */
+        //<editor-fold defaultstate="collapsed" desc=" Look and feel setting code (optional) ">
+        /* If Nimbus (introduced in Java SE 6) is not available, stay with the default look and feel.
+         * For details see http://download.oracle.com/javase/tutorial/uiswing/lookandfeel/plaf.html 
+         */
+        try {
+            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
+                if ("Nimbus".equals(info.getName())) {
+                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
+                    break;
+                }
+            }
+        } catch (ClassNotFoundException ex) {
+            java.util.logging.Logger.getLogger(FormPaciente.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (InstantiationException ex) {
+            java.util.logging.Logger.getLogger(FormPaciente.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (IllegalAccessException ex) {
+            java.util.logging.Logger.getLogger(FormPaciente.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        } catch (javax.swing.UnsupportedLookAndFeelException ex) {
+            java.util.logging.Logger.getLogger(FormPaciente.class.getName()).log(java.util.logging.Level.SEVERE, null, ex);
+        }
+        //</editor-fold>
+
+        /* Create and display the form */
+        java.awt.EventQueue.invokeLater(new Runnable() {
+            public void run() {
+                new FormPaciente().setVisible(true);
+            }
+        });
+    }
+
+    // Variables declaration - do not modify                     
+    private javax.swing.JButton jButtonAlterar;
+    private javax.swing.JButton jButtonCancelar;
+    private javax.swing.JButton jButtonExcluir;
+    private javax.swing.JButton jButtonNovo;
+    private javax.swing.JButton jButtonPesquisa;
+    private javax.swing.JButton jButtonSalvar;
+    private javax.swing.JComboBox jComboBoxBairro;
+    private javax.swing.JFormattedTextField jFormattedTextFieldCEP;
+    private javax.swing.JFormattedTextField jFormattedTextFieldNascimento;
+    private javax.swing.JFormattedTextField jFormattedTextFieldRG;
+    private javax.swing.JFormattedTextField jFormattedTextFieldTelefone;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel10;
+    private javax.swing.JLabel jLabel11;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JLabel jLabel6;
+    private javax.swing.JLabel jLabel7;
+    private javax.swing.JLabel jLabel8;
+    private javax.swing.JLabel jLabel9;
+    private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanelEndereço;
+    private javax.swing.JScrollPane jScrollPane1;
+    private javax.swing.JTable jTablePacientes;
+    private javax.swing.JTextField jTextFieldComplemento;
+    private javax.swing.JTextField jTextFieldID;
+    private javax.swing.JTextField jTextFieldNome;
+    private javax.swing.JTextField jTextFieldPesquisa;
+    private javax.swing.JTextField jTextFieldRua;
+    // End of variables declaration                   
+}
+```
+```java
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package modeloDAO;
+
+//import java.sql.Date;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import javax.swing.JOptionPane;
+import modeloBeans.BeansPaciente;
+import modeloConection.Conexao;
+
+/**
+ *
+ * @author duran
+ */
+public class DAOPaciente {
+    
+    BeansPaciente pac = new BeansPaciente();
+    Conexao conex = new Conexao();
+    //BeansPaciente mod = new BeansPaciente();
+    int codeBairro;
+    String nomeBairro;
+    
+    public void Alterar(BeansPaciente pac){
+        BuscabairroCode(pac.getNomebairro());
+        conex.Conexao();
+       try{ 
+        PreparedStatement pst = conex.con.prepareStatement("UPDATE pacientes SET  pac_nome=?, pac_nascimento=?, pac_rg=?, PAC_TELEFONE=?, pac_rua=?, pac_cep=?, pac_complemento=?, pac_bairro_fkey=? WHERE pac_code=?" );
+        pst.setString(1, pac.getNome());
+        pst.setString(2, pac.getNascimento());
+        pst.setString(3, pac.getRg());
+        pst.setString(4,pac.getTelefone());
+        pst.setString(5,pac.getRua());
+        pst.setString(6,pac.getCep());
+        pst.setString(7,pac.getComplemento());
+        pst.setInt(8,codeBairro);
+        pst.setInt(9, pac.getCodePac());
+        pst.execute();
+        JOptionPane.showMessageDialog(null,"paciente alterado com sucesso");
+        
+        
+       }catch(SQLException ex){
+           JOptionPane.showMessageDialog(null,"não faz Alteração em pacientes" + ex.getMessage());
+       }
+        conex.Desconecta();
+    }
+    
+    public void Salvar(BeansPaciente pac){
+        BuscabairroCode(pac.getNomebairro());
+        conex.Conexao();
+       try{ 
+        PreparedStatement pst = conex.con.prepareStatement("INSERT INTO pacientes (pac_nome, pac_nascimento, pac_rg, PAC_TELEFONE, pac_rua, pac_cep, pac_complemento, pac_bairro_fkey )VALUES (?,?,?,?,?,?,?,?)");
+        pst.setString(1, pac.getNome());
+        pst.setString(2, pac.getNascimento());
+        pst.setString(3, pac.getRg());
+        pst.setString(4,pac.getTelefone());
+        pst.setString(5,pac.getRua());
+        pst.setString(6,pac.getCep());
+        pst.setString(7,pac.getComplemento());
+        pst.setInt(8,codeBairro);
+        
+        pst.execute();
+        JOptionPane.showMessageDialog(null,"paciente salvo com sucesso");
+        
+        
+       }catch(SQLException ex){
+           JOptionPane.showMessageDialog(null,"não faz insert em pacientes" + ex.getMessage());
+       }
+        conex.Desconecta();
+    }
+    
+    public BeansPaciente buscaPaciente(BeansPaciente pac){
+        conex.Conexao();
+        conex.executaSQL("SELECT * FROM pacientes WHERE pac_nome LIKE '%"+pac.getPesquisar()+"%'");
+      // JOptionPane.showMessageDialog(null, pac.getNome()); 
+               try {
+            
+            conex.rs.first();
+            buscaNomeBairro(conex.rs.getInt("pac_code"));
+            pac.setCodePac(conex.rs.getInt("pac_code"));
+            pac.setNome(conex.rs.getString("pac_nome"));
+            pac.setRg(conex.rs.getString("pac_rg"));
+            pac.setNascimento(conex.rs.getString("pac_nascimento"));
+            pac.setCep(conex.rs.getString("pac_cep"));
+            pac.setRua(conex.rs.getString("pac_rua"));
+            pac.setComplemento(conex.rs.getString("pac_complemento"));
+            pac.setNomebairro(nomeBairro);
+            pac.setTelefone(conex.rs.getString("pac_telefone"));
+            
+        } catch (SQLException ex) {
+            Logger.getLogger(DAOPaciente.class.getName()).log(Level.SEVERE, null, ex);
+             JOptionPane.showMessageDialog(null,"erro função  buscaPaciente" + ex.getMessage());
+        }
+        
+        conex.Desconecta();
+        return pac;
+    }
+    
+    public void BuscabairroCode (String nome){
+        conex.Conexao();
+        
+        conex.executaSQL("SELECT * FROM bairro WHERE bainome Like '%" + nome + "%'");
+        
+        try {
+            conex.rs.first();
+            codeBairro = conex.rs.getInt("baicode");
+        } catch (SQLException ex) {
+            Logger.getLogger(DAOPaciente.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(null,"erro função  BuscabairroCode" + ex.getMessage());
+        }
+        
+        conex.Desconecta();
+    }
+    
+    
+    public void buscaNomeBairro (int cod){
+        Conexao conexbusca = new Conexao();
+        conexbusca.Conexao();
+        
+                try {
+            conexbusca.executaSQL("SELECT * FROM bairro WHERE baicode = " + cod);
+            conexbusca.rs.first();
+            nomeBairro = conexbusca.rs.getString("bainome");
+        } catch (SQLException ex) {
+            Logger.getLogger(DAOPaciente.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(null,"não conseguiu função buscaNomeBairro" +  ex.getMessage());
+        }
+        
+        conexbusca.Desconecta();
+    }
+    
+    public void excluir(BeansPaciente pac){
+        conex.Conexao();
+        try {
+            PreparedStatement pst = conex.con.prepareStatement("DELETE FROM pacientes WHERE pac_code = ?");
+            pst.setInt(1, pac.getCodePac());
+            pst.execute();
+        } catch (SQLException ex) {
+            Logger.getLogger(DAOPaciente.class.getName()).log(Level.SEVERE, null, ex);
+            JOptionPane.showMessageDialog(null,"não conseguiu função excluir" +  ex.getMessage());
+        }
+        
+        
+        conex.Desconecta();
+    }
+}
+```
+```java
+/*
+ * To change this license header, choose License Headers in Project Properties.
+ * To change this template file, choose Tools | Templates
+ * and open the template in the editor.
+ */
+package modeloBeans;
+
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import javax.swing.JOptionPane;
+
+/**
+ *
+ * @author duran
+ */
+public class BeansPaciente {
+    private int codePac;
+    private String nome;
+    private String nascimento;
+
+    public String getNascimento() {
+        return nascimento;
+    }
+
+    public void setNascimento(String nascimento) {
+        this.nascimento = nascimento;
+    }
+
+    private String rg;
+    private String telefone;
+    private String rua;
+    private String complemento;
+    private String cep;
+    private String nomebairro;
+    private String pesquisar;
+
+    /**
+     * @return the codePac
+     */
+    public int getCodePac() {
+        return codePac;
+    }
+
+    /**
+     * @param codePac the codePac to set
+     */
+    public void setCodePac(int codePac) {
+        this.codePac = codePac;
+    }
+
+    /**
+     * @return the nome
+     */
+    public String getNome() {
+        return nome;
+    }
+
+    /**
+     * @param nome the nome to set
+     */
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+
+    /**
+     * @return the nascimento
+     */
+   
+
+    /**
+     * @return the rg
+     */
+    public String getRg() {
+        return rg;
+    }
+
+    /**
+     * @param rg the rg to set
+     */
+    public void setRg(String rg) {
+        this.rg = rg;
+    }
+
+    /**
+     * @return the telefone
+     */
+    public String getTelefone() {
+        return telefone;
+    }
+
+    /**
+     * @param telefone the telefone to set
+     */
+    public void setTelefone(String telefone) {
+        this.telefone = telefone;
+    }
+
+    /**
+     * @return the rua
+     */
+    public String getRua() {
+        return rua;
+    }
+
+    /**
+     * @param rua the rua to set
+     */
+    public void setRua(String rua) {
+        this.rua = rua;
+    }
+
+    /**
+     * @return the complemento
+     */
+    public String getComplemento() {
+        return complemento;
+    }
+
+    /**
+     * @param complemento the complemento to set
+     */
+    public void setComplemento(String complemento) {
+        this.complemento = complemento;
+    }
+
+    /**
+     * @return the cep
+     */
+    public String getCep() {
+        return cep;
+    }
+
+    /**
+     * @param cep the cep to set
+     */
+    public void setCep(String cep) {
+        this.cep = cep;
+    }
+
+    /**
+     * @return the nomebairro
+     */
+    public String getNomebairro() {
+        return nomebairro;
+    }
+
+    /**
+     * @param nomebairro the nomebairro to set
+     */
+    public void setNomebairro(String nomebairro) {
+        this.nomebairro = nomebairro;
+    }
+
+    /**
+     * @return the pesquisar
+     */
+    public String getPesquisar() {
+        return pesquisar;
+    }
+
+    /**
+     * @param pesquisar the pesquisar to set
+     */
+    public void setPesquisar(String pesquisar) {
+        this.pesquisar = pesquisar;
+    }
+
+    /**
+     *
+     * @param data
+     * @return
+     */
+   /* public Date convertDataStringtoDatautil(String dat){
+        SimpleDateFormat df = new SimpleDateFormat("dd/MM/YYYY");
+        data = new Date(dat);
+        return data;
+        
+    }*/
+    
+    public java.sql.Date converteDataUtilToSql(Date data) {
+
+    SimpleDateFormat df = new SimpleDateFormat("dd/MM/yyyy");
+
+    Date dataUtil = data;
+    java.sql.Date dataSql = null;
+
+    try {
+        dataUtil = new java.sql.Date(dataUtil.getTime());
+        dataSql = (java.sql.Date) dataUtil;
+
+    } catch (Exception e) {
+        JOptionPane.showMessageDialog(null, "Erro ao converte data para sql: " + e.getMessage());
+    }
+
+
+    return dataSql;
+}
+
+    
+  
+   
+}
+```
