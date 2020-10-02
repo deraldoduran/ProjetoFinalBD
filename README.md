@@ -1,4 +1,15 @@
 ```SQL
+CREATE TABLE IF NOT EXISTS agenda (
+	agenda_code SERIAL NOT NULL PRIMARY KEY,
+	agenda_codepac_fkey INT REFERENCES pacientes (pac_code),
+	agenda_codemed_fkey INT REFERENCES  medico (num_med),
+	agenda_turno VARCHAR (50),
+	agenda_data DATE,
+	agenda_motivo VARCHAR(255),
+	agenda_status VARCHAR (15)
+);
+```
+```SQL
 CREATE TABLE IF NOT EXISTS medico(
 	num_med SERIAL NOT NULL PRIMARY KEY,
 	nome VARCHAR(250),
